@@ -105,3 +105,28 @@ def test_missing_knowledge_base_degrades_safely(tmp_path):
     p = Pipeline(knowledge_dir=str(tmp_path))
     r = p.run({"genre": "pop"})
     assert not r.ok and "knowledge base unavailable" in r.error
+
+
+# --- specialized explanations ----------------------------------------------
+from src.explainer import FEW_SHOT_EXAMPLES, check_constraints, explain_baseline, render  # noqa: E402
+from src.rag import RankedSong  # noqa: E402
+
+
+@pytest.mark.parametrize("ex", FEW_SHOT_EXAMPLES)
+def test_few_shot_examples_render_exactly(ex):
+    r = RankedSong(ex["song"], 0.0, ex["reasons"], ex["note"])
+    assert render(r, ex["confidence"]) == ex["expected"]
+    assert check_constraints(ex["expected"], r) == []
+
+
+def test_constraints_catch_violations():
+    ex = FEW_SHOT_EXAMPLES[0]
+    r = RankedSong(ex["song"], 0.0, ex["reasons"], ex["note"])
+    assert "missing confidence tag" in check_constraints("Sunrise City is nice.", r)
+    assert check_constraints("Sunrise City. One. Two. [high confidence 0.90]", r)
+
+
+def test_pipeline_uses_specialized_text(pipeline):
+    rec = pipeline.run({"genre": "pop", "mood": "happy", "energy": 0.8}).recommendations[0]
+    assert rec.explanation != rec.baseline_explanation
+    assert "confidence" in rec.explanation and "genre match" in rec.baseline_explanation
