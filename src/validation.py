@@ -54,7 +54,7 @@ def validate_request(raw: Any, kb: KnowledgeBase) -> Dict[str, Any]:
     if text is not None:
         if not isinstance(text, str):
             raise ValidationError(f"text must be a string, got {type(text).__name__}")
-        text = re.sub(r"[\x00-\x1f\x7f]+", " ", text).strip()
+        text = re.sub(r"\s+", " ", re.sub(r"[\x00-\x1f\x7f]+", " ", text)).strip()
         if len(text) > MAX_TEXT_CHARS:
             raise ValidationError(f"text is too long ({len(text)} characters; the limit is {MAX_TEXT_CHARS})")
         if text:
