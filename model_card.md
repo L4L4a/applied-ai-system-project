@@ -67,11 +67,11 @@ What changed: the specialized text names the song, says in plain words why it ma
 
 ## AI collaboration
 
-**How I used AI.** I used Claude Code as a pair programmer: it read the existing recommender, proposed the file layout (retriever, rag, validation, pipeline, explainer, trace), wrote the first version of each module, the knowledge notes and the tests, and ran the code. I set the constraints (offline, six commits, real outputs only) and reviewed the outputs.
+I used Claude Code to help build this. It read my original recommender, wrote the first version of each new module, the knowledge notes and the tests, and ran the code. I set the rules (offline, no API keys, real outputs only) and checked what it produced.
 
-**A suggestion I accepted.** Make retrieval change the *score* (related genres, inferred preferences, energy ranges) rather than only attaching a note to the explanation. It makes the before/after comparison measurable, and the effect is visible in Example 2, where lofi songs replace reggae and ambient filler.
+**A suggestion I accepted.** Use the retrieval notes to adjust the ranking, not just to add text to the explanation. This made the before/after comparison measurable. In Example 2, lofi songs replace reggae and ambient filler because the notes list lofi as related to jazz.
 
-**A suggestion I revised.** The first explanation template described every energy term as "close to your target". I revised it after the baseline-vs-specialized comparison showed a false statement (see "What surprised me", item 1). I also chose not to add an LLM-based answer step, because the brief required offline operation without API keys; keyword retrieval plus a template still lets the retrieved text drive the output and is reproducible.
+**A suggestion I revised.** The first explanation template said "its energy is close to your target" for every energy match. In the before/after comparison I saw it say that about a 0.45-energy song when my target was 0.95. I caught it and had it fixed. The template now reads the actual similarity and says "close", "only partly near" or "far from" your target.
 
 ## System limitations and future improvements
 
@@ -85,7 +85,7 @@ What changed: the specialized text names the song, says in plain words why it ma
 
 ## What this project says about me as an AI engineer
 
-I treat an AI feature as a system around a model, not the model alone: the useful work here was validation, a fallback, a confidence signal, a test harness and a log, and I trust output only after I have run it and read it. Comparing baseline and specialized text and finding a false claim in my own template shows that I check the output instead of assuming the design is right. I prefer small, inspectable mechanisms (keyword retrieval, a visible scoring formula) that I can explain and test over larger ones I could not verify offline, and I would rather document a weakness, like the over-confident contradictory case, than hide it.
+I build the checks around the model, not just the model: validation, a fallback, a confidence score, a test harness and a log. I only trust output after I have run it and read it, and that is how I caught the false energy claim. I prefer small mechanisms I can explain and test, and I would rather write down a weakness than hide it.
 
 ---
 
