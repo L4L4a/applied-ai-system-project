@@ -1,4 +1,95 @@
-# 🎧 Model Card: Music Recommender Simulation
+# 🎧 Model Card: Music Recommender, Applied AI System
+
+This card covers the extended system (retrieval, guardrails, confidence, specialized explanations). The original Modules 1-3 card is kept unchanged below under "Base project model card".
+
+**System in one line:** an offline, rule-based recommender over 20 songs that retrieves notes from `data/knowledge/` and `songs.csv`, uses them to re-rank and explain, and attaches a heuristic confidence. There is no trained model and no LLM; "AI" here means retrieval plus transparent scoring.
+
+## Baseline vs specialized output
+
+*Baseline* = the list of scoring terms that fired. *Specialized* = the few-shot template in `src/explainer.py` (exactly two sentences plus a confidence tag, facts only from the song row and fired terms, quoting the retrieved note). Real output from `python -m src.compare_explanations`:
+
+```text
+=== Request: {'genre': 'pop', 'mood': 'happy', 'energy': 0.8} (overall confidence 0.90) ===
+#1 Sunrise City
+  BASELINE   : genre match (+2.0), mood match (+1.0), energy similarity (+0.98), energy inside 'happy' range 0.60-0.90 (+0.25)
+  SPECIALIZED: Sunrise City by Neon Echo ranks here because its genre (pop) matches, its mood (happy) matches and its energy (0.82) is close to your target. Pop is built around catchy hooks and polished production, and it bends easily toward dance or indie sounds. [high confidence 1.00]
+#2 Neon Ballroom
+  BASELINE   : genre match (+2.0), energy similarity (+0.88), 'romantic' is a related mood in the notes (+0.50), energy inside 'happy' range 0.60-0.90 (+0.25)
+  SPECIALIZED: Neon Ballroom by Velour ranks here because its genre (pop) matches, its energy (0.68) is close to your target and romantic is a related mood in the notes. Pop is built around catchy hooks and polished production, and it bends easily toward dance or indie sounds. [high confidence 0.90]
+
+=== Request: 'late night study session, something mellow' (overall confidence 0.98) ===
+#1 Library Rain
+  BASELINE   : mood match (+1.0), energy similarity (+1.00), genre 'lofi' inferred from notes (+1.00), energy inside 'chill' range 0.20-0.50 (+0.25)
+  SPECIALIZED: Library Rain by Paper Lanterns ranks here because its mood (chill) matches, its energy (0.35) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+#2 Midnight Coding
+  BASELINE   : mood match (+1.0), energy similarity (+0.93), genre 'lofi' inferred from notes (+1.00), energy inside 'chill' range 0.20-0.50 (+0.25)
+  SPECIALIZED: Midnight Coding by LoRoom ranks here because its mood (chill) matches, its energy (0.42) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+
+=== Request: {'genre': 'blues', 'mood': 'sad', 'energy': 0.95} (overall confidence 0.61) ===
+#1 Porch Light Blues
+  BASELINE   : genre match (+2.0), mood match (+1.0), energy similarity (+0.50), energy inside 'sad' range 0.20-0.55 (+0.25)
+  SPECIALIZED: Porch Light Blues by Delta Mae ranks here because its genre (blues) matches, its mood (sad) matches and its energy (0.45) is far from your target. Blues is built on expressive guitar and sorrowful lyrics and rarely runs at high energy. [high confidence 0.87]
+#2 Storm Runner
+  BASELINE   : energy similarity (+0.96), 'rock' is a related genre in the notes (+0.75)
+  SPECIALIZED: Storm Runner by Voltline ranks here because its energy (0.91) is close to your target and rock is a neighbouring genre in the notes. Rock is guitar-driven and loud. [medium confidence 0.54]
+```
+
+What changed: the specialized text names the song, says in plain words why it matched, quotes the knowledge note that applies, and states a confidence level; the baseline is compact but needs the reader to know the scoring rule. What did not change: the ranking, which comes from the same scores. Where the specialized style is worse: it is longer and repeats the same note sentence for songs of the same genre (Library Rain and Midnight Coding get identical second sentences). Its one real failure was found by this comparison and is described under "What surprised me".
+
+## Limitations and biases
+
+- **Tiny catalog.** 20 songs, mostly one per genre. After the on-genre song, results are "nearest in energy" filler, so a niche taste gets one good pick and four loosely related ones.
+- **Genre bias carried over.** An exact genre match is still worth +2.0, more than any retrieval bonus (0.25-1.0). Example 3 shows a sad-blues request at 0.95 energy still puts a 0.45-energy blues song first.
+- **The notes are my opinion.** "Lofi is related to ambient, jazz and classical", "study music is calm" and the energy ranges are hand-written, and reflect a Western, English-language view of genres. A listener who studies to metal is treated as an unusual case. Whoever writes the notes steers the ranking.
+- **Keyword retrieval is brittle.** Synonyms outside the notes miss, and single words can mislead ("rain" appears in lofi, classical and blues notes). The stemmer is a three-suffix rule, and everything is English only.
+- **Energy words are a crude mapping** ("mellow" = 0.35, "workout" = 0.85) that ignores context.
+- **Confidence is a heuristic, not a probability.** It was never checked against real user satisfaction; a fully matching but tiny-catalog result can score 1.00.
+- **Fairness.** Mainstream genres have more notes and more adjacent genres, so they get richer explanations and more related-genre help than niche ones.
+
+## How the system could be misused, and how that is prevented
+
+| Risk | Prevention in this project | Remaining gap |
+|---|---|---|
+| **Injection through free text** (control characters, instructions, log forging) | Text is only tokenized and matched, never executed, evaluated or sent to a model. Control characters are stripped, length is capped at 300, unknown fields are rejected. | If this were later wired to an LLM, the text would need separate prompt-injection defenses. |
+| **Steering users by editing the knowledge base** (for example boosting one artist or genre) | Ranking terms are small and listed in every explanation, so a boost is visible. Notes are plain files tracked in git. | No review process or signing of notes; anyone with write access can bias results. |
+| **Overtrusting the output** | Confidence tags, low-confidence and contradiction warnings, and rejection instead of guessing. | Confidence is uncalibrated and can read "high" on a contradictory request (see below). |
+| **Privacy** | No accounts, no listening history, no network calls. Logs are local and git-ignored. | `logs/system.log` stores raw request text; a user could type personal information, and there is no log rotation or redaction. |
+| **Scale-style misuse** (flooding, huge inputs) | Input cap and fast, bounded work per request. | No rate limiting, because this is a local CLI. |
+
+## What surprised me while testing reliability
+
+1. **The specialized explanation lied.** Reading `explanation_comparison.txt` I saw "its energy (0.45) is close to your target" for a request targeting 0.95. The first template always said "close". The fix reads the actual similarity from the fired term and says "close", "only partly near" or "far from" accordingly. The baseline never had this problem because it only printed numbers.
+2. **A unit test caught a normalization bug.** `"Chill\x00 vibes"` came back as `"Chill  vibes"` (double space) because control characters were replaced but whitespace was not collapsed. Fixed in `validate_request`.
+3. **An offline run failed on import.** `tabulate` was imported at the top of `src/main.py`, so the new "no extra packages" mode crashed when it was not installed. It is now imported only when a table is printed.
+4. **Confidence can look too high.** For the contradictory sad-blues request, the top song still gets "high confidence 0.87" because genre and mood match exactly. Only the overall confidence (0.61) and the printed warning reflect the 0.50 energy gap. I kept it and documented it rather than hide it, but a per-song penalty for contradictions is the first thing I would change.
+5. **Retrieval helped most where I expected least.** The free-text study request is impossible for the baseline to interpret as a genre; retrieval infers lofi and moves a lofi song into the top 3 where the baseline had none. For structured input the effect is smaller and mostly shows in ranks 2-3.
+6. **The self-check fallback has never fired** on the 15 evaluation inputs. It is unit-tested for the happy path only, so I cannot claim evidence that it works under a real failure.
+
+## AI collaboration
+
+**How I used AI.** I used Claude Code as a pair programmer: it read the existing recommender, proposed the file layout (retriever, rag, validation, pipeline, explainer, trace), wrote the first version of each module, the knowledge notes and the tests, and ran the code. I set the constraints (offline, six commits, real outputs only) and reviewed the outputs.
+
+**A suggestion I accepted.** Make retrieval change the *score* (related genres, inferred preferences, energy ranges) rather than only attaching a note to the explanation. It makes the before/after comparison measurable, and the effect is visible in Example 2, where lofi songs replace reggae and ambient filler.
+
+**A suggestion I revised.** The first explanation template described every energy term as "close to your target". I revised it after the baseline-vs-specialized comparison showed a false statement (see "What surprised me", item 1). I also chose not to add an LLM-based answer step, because the brief required offline operation without API keys; keyword retrieval plus a template still lets the retrieved text drive the output and is reproducible.
+
+## System limitations and future improvements
+
+- Replace keyword overlap with a small local embedding model, and measure retrieval quality (for example hit rate on a labelled query set), not only end-to-end pass/fail.
+- Penalize confidence per song when a stated preference is clearly contradicted, and calibrate confidence against collected user ratings.
+- Grow the catalog so that each genre has several songs; until then every result list ends in filler.
+- Give notes a source and review step, and add a test that fails if one note boosts a single artist.
+- Redact or hash request text in logs and add rotation.
+- Add a test that forces the self-check fallback path (for example with a deliberately broken ranker) so it is not only designed, but exercised.
+- Support multi-genre and multi-mood requests ("jazz or lofi"), which the parser currently collapses to one value.
+
+## What this project says about me as an AI engineer
+
+I treat an AI feature as a system around a model, not the model alone: the useful work here was validation, a fallback, a confidence signal, a test harness and a log, and I trust output only after I have run it and read it. Comparing baseline and specialized text and finding a false claim in my own template shows that I check the output instead of assuming the design is right. I prefer small, inspectable mechanisms (keyword retrieval, a visible scoring formula) that I can explain and test over larger ones I could not verify offline, and I would rather document a weakness, like the over-confident contradictory case, than hide it.
+
+---
+
+# Base project model card (Modules 1-3)
 
 ## 1. Model Name
 

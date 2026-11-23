@@ -1,6 +1,293 @@
-# 🎵 Music Recommender Simulation
+# 🎵 Music Recommender: Applied AI System
 
-## Project Summary
+An offline, retrieval-augmented music recommender. A user describes what they want ("late night study session, something mellow", or a genre / mood / energy value). The system validates the request, **retrieves** relevant notes from a small knowledge base, uses them to **re-rank** the catalog and to **explain** every pick, runs a **self-check** on its own output, and reports a **confidence score** for each recommendation. No API keys or network access are needed.
+
+## Base project
+
+This extends **Music Recommender Simulation (Modules 1-3)**. The original project read 20 songs from `data/songs.csv`, scored each against a hand-declared taste profile (favorite genre +2.0, mood +1.0, energy closeness up to +1.0, plus optional extra-attribute terms), sorted by score and returned the top 5 with a reason string for every scoring term that fired. Its goal was to show that a scoring rule plus a sort is what a recommender is underneath, and to test how changing weights changes who gets recommended. Its stretch work added ranking modes (Strategy pattern), a diversity re-rank and table output. All of that is still here and unchanged (`python -m src.main` with no new flags); the original write-up is kept in [Base project details](#base-project-details-modules-1-3) below.
+
+## What this version adds
+
+| Capability | Where |
+|---|---|
+| **RAG**: three knowledge sources (`data/knowledge/genre_notes.md`, `mood_notes.md`, `data/songs.csv`) retrieved by `src/retriever.py`; retrieved notes change the ranking and are quoted in the explanation | `src/retriever.py`, `src/rag.py` |
+| **Reliability**: input validation, guardrails, safe error handling, logging to `logs/system.log`, per-recommendation confidence | `src/validation.py`, `src/pipeline.py`, `src/logging_setup.py` |
+| **Test harness**: `evaluate.py` (15 predefined inputs) and 37 pytest tests | `evaluate.py`, `tests/` |
+| **Specialization**: constrained, few-shot style explanation template, compared with the baseline in the model card | `src/explainer.py` |
+| **Agentic trace**: validate -> parse -> retrieve -> rank -> self-check -> explain, intermediate steps saved to [`ai_interactions.md`](ai_interactions.md) | `src/pipeline.py`, `src/trace.py` |
+
+## Architecture overview
+
+Source: [`diagrams/architecture.mmd`](diagrams/architecture.mmd) (Mermaid; GitHub renders it below). It mirrors `Pipeline.run` in `src/pipeline.py`.
+
+```mermaid
+flowchart TD
+    U[/"User request<br/>free text and/or genre, mood, energy"/] --> V
+
+    subgraph PIPE["src/pipeline.py : Pipeline.run (every step is recorded in result.steps)"]
+        V{"1. Validate<br/>src/validation.py"}
+        P["2. Parse<br/>rag.parse_request"]
+        R["3. Retrieve<br/>retriever.retrieve + rag.build_context"]
+        K["4. Rank<br/>rag.rank_rag"]
+        C{"5. Self-check<br/>pipeline.self_check"}
+        B["Fallback ranking<br/>rag.rank_baseline"]
+        E["6. Explain + confidence<br/>explainer.explain_specialized<br/>pipeline.confidence_for"]
+        V -- valid --> P --> R --> K --> C
+        C -- pass --> E
+        C -- fail --> B --> E
+    end
+
+    V -- "rejected: empty, unknown genre/mood, bad energy, too long" --> X["Rejection message<br/>ok=False, no recommendations"]
+    R -. "nothing matched" .-> X
+    C -- "fails again" --> X
+
+    KB[("Knowledge base<br/>data/knowledge/genre_notes.md<br/>data/knowledge/mood_notes.md<br/>data/songs.csv")] --> R
+    KB --> V
+    SONGS[("data/songs.csv<br/>20 songs")] --> K
+
+    E --> O[/"Output: top-k songs with score,<br/>confidence, explanation + warnings"/]
+    O --> T["Trace saved to ai_interactions.md<br/>src/trace.py"]
+
+    V -. log .-> L[("logs/system.log")]
+    X -. log .-> L
+    E -. log .-> L
+
+    subgraph TEST["Testing"]
+        EV["evaluate.py<br/>15 predefined inputs: pass/fail + average confidence"]
+        PT["pytest tests/<br/>37 unit tests"]
+    end
+    EV -. "calls Pipeline.run" .-> U
+    PT -. "unit tests each module" .-> PIPE
+```
+
+1. **Validate** (`validation.py`): rejects empty, wrongly typed, unknown-genre/mood, out-of-range or over-long input with a message that says what to fix.
+2. **Parse** (`rag.parse_request`): pulls genre / mood / energy out of free text using aliases from the notes ("rap" -> hip hop, "mellow" -> energy 0.35). Explicit fields win over text.
+3. **Retrieve** (`retriever.py`): keyword-overlap scoring over genre notes, mood notes and song rows (names +4, aliases +3, topical keywords +1).
+4. **Rank** (`rag.rank_rag`): the original score plus retrieval terms: inferred genre/mood/energy when the request omits them, +0.75 for a *related genre* in the notes, +0.5 for a related mood, +0.25 for energy inside the mood's typical range, +0.5 for a matching catalog `mood_tag`.
+5. **Self-check** (`pipeline.self_check`): result count, no duplicates, sorted scores, top result relevant to the request. If the retrieval ranking fails, the pipeline falls back to the baseline rule and says so; if that also fails, nothing is returned.
+6. **Explain + confidence**: the few-shot template (two sentences plus a confidence tag) quotes the matching knowledge note. Confidence = 0.55 * normalised score + 0.30 * preference coverage + 0.15 * retrieval support.
+
+Testing happens at two levels (bottom of the diagram): `pytest` checks each module, `evaluate.py` runs the whole pipeline end to end.
+
+## Setup, run and test
+
+```bash
+# 1. (optional) virtual environment
+python3 -m venv .venv && source .venv/bin/activate
+
+# 2. install dependencies (the retrieval pipeline and tests only need pytest;
+#    tabulate is used just by the original table output)
+pip install -r requirements.txt
+
+# 3. run the system from the project root
+python -m src.main --query "late night study session, something mellow"
+python -m src.main --genre jazz --mood relaxed --energy 0.3 --compare     # before/after retrieval
+python -m src.main --query "" --plain                                      # guardrail demo
+python -m src.main --query "pumped up workout" --no-rag                    # retrieval off
+python -m src.main --query "study music" --trace trace.md                  # save the step-by-step trace
+python -m src.trace                                                        # regenerate traces in ai_interactions.md
+python -m src.compare_explanations                                         # baseline vs specialized text
+
+# 4. test
+python evaluate.py        # 15 predefined inputs, pass/fail summary, average confidence, exit code 0 on success
+pytest                    # 37 unit tests
+```
+
+Real command outputs are saved in [`assets/`](assets/) (`evaluate_output.txt`, `pytest_output.txt`, `example*.txt`, `guardrail_*.txt`, `explanation_comparison.txt`, `system_log_sample.txt`).
+
+## Example inputs and real outputs
+
+All outputs below were produced by running the commands shown (copies in `assets/`).
+
+### Example 1: free text, no genre given
+
+`python -m src.main --query "late night study session, something mellow" --compare -k 3`
+
+The baseline can only use what the text parser extracts (mood chill, energy 0.35); retrieval also infers *lofi* from the notes and lifts the lofi songs.
+
+```text
+=== WITHOUT retrieval (baseline) ===
+Request: {'text': 'late night study session, something mellow'}
+Mode: baseline | overall confidence: 0.84
+
+1. Library Rain by Paper Lanterns - Score: 2.00 - Confidence: 0.85
+   Because: mood match (+1.0), energy similarity (+1.00)
+2. Spacewalk Thoughts by Orbit Bloom - Score: 1.93 - Confidence: 0.83
+   Because: mood match (+1.0), energy similarity (+0.93)
+3. Midnight Coding by LoRoom - Score: 1.93 - Confidence: 0.83
+   Because: mood match (+1.0), energy similarity (+0.93)
+
+=== WITH retrieval ===
+Request: {'text': 'late night study session, something mellow'}
+Mode: rag | overall confidence: 0.98
+
+1. Library Rain by Paper Lanterns - Score: 3.25 - Confidence: 1.00
+   Because: Library Rain by Paper Lanterns ranks here because its mood (chill) matches, its energy (0.35) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+2. Midnight Coding by LoRoom - Score: 3.18 - Confidence: 1.00
+   Because: Midnight Coding by LoRoom ranks here because its mood (chill) matches, its energy (0.42) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+3. Spacewalk Thoughts by Orbit Bloom - Score: 2.93 - Confidence: 0.94
+   Because: Spacewalk Thoughts by Orbit Bloom ranks here because its mood (chill) matches, its energy (0.28) is close to your target and ambient is a neighbouring genre in the notes. Ambient favours texture over rhythm. [high confidence 0.94]
+```
+
+### Example 2: before/after retrieval for a structured request
+
+`python -m src.main --genre jazz --mood relaxed --energy 0.3 --compare -k 3`
+
+There is only one jazz song. The baseline fills ranks 2-3 with whatever is closest in energy (reggae, ambient). Retrieval uses the jazz and relaxed notes (lofi is a related genre, chill a related mood), so the quiet lofi songs take ranks 2-3, each with a cited reason. Overall confidence moves from 0.49 to 0.79.
+
+```text
+=== WITHOUT retrieval (baseline) ===
+Request: {'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3}
+Mode: baseline | overall confidence: 0.49
+WARNING: Low confidence (0.49): the catalog has few songs matching this request.
+
+1. Coffee Shop Stories by Slow Stereo - Score: 3.93 - Confidence: 0.84
+   Because: genre match (+2.0), mood match (+1.0), energy similarity (+0.93)
+2. Island Drift by Salt Tide - Score: 1.72 - Confidence: 0.39
+   Because: mood match (+1.0), energy similarity (+0.72)
+3. Spacewalk Thoughts by Orbit Bloom - Score: 0.98 - Confidence: 0.23
+   Because: energy similarity (+0.98)
+
+=== WITH retrieval ===
+Request: {'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3}
+Mode: rag | overall confidence: 0.79
+
+1. Coffee Shop Stories by Slow Stereo - Score: 4.18 - Confidence: 1.00
+   Because: Coffee Shop Stories by Slow Stereo ranks here because its genre (jazz) matches, its mood (relaxed) matches and its energy (0.37) is close to your target. Jazz is improvisational and mellow in its lounge forms. [high confidence 1.00]
+2. Library Rain by Paper Lanterns - Score: 2.45 - Confidence: 0.69
+   Because: Library Rain by Paper Lanterns ranks here because its energy (0.35) is close to your target, lofi is a neighbouring genre in the notes and chill is a related mood in the notes. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [medium confidence 0.69]
+3. Midnight Coding by LoRoom - Score: 2.38 - Confidence: 0.68
+   Because: Midnight Coding by LoRoom ranks here because its energy (0.42) is close to your target, lofi is a neighbouring genre in the notes and chill is a related mood in the notes. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [medium confidence 0.68]
+```
+
+### Example 3: contradictory request (sad blues at high energy)
+
+`python -m src.main --genre blues --mood sad --energy 0.95 -k 3`
+
+The mood note says sad music typically runs at 0.20-0.55 energy, so the system warns about the contradiction and the confidence drops.
+
+```text
+=== WITH retrieval ===
+Request: {'genre': 'blues', 'mood': 'sad', 'energy': 0.95}
+Mode: rag | overall confidence: 0.61
+WARNING: Energy 0.95 is unusual for mood 'sad' (typical 0.20-0.55); expect a compromise between mood and energy.
+
+1. Porch Light Blues by Delta Mae - Score: 3.75 - Confidence: 0.87
+   Because: Porch Light Blues by Delta Mae ranks here because its genre (blues) matches, its mood (sad) matches and its energy (0.45) is far from your target. Blues is built on expressive guitar and sorrowful lyrics and rarely runs at high energy. [high confidence 0.87]
+2. Storm Runner by Voltline - Score: 1.71 - Confidence: 0.54
+   Because: Storm Runner by Voltline ranks here because its energy (0.91) is close to your target and rock is a neighbouring genre in the notes. Rock is guitar-driven and loud. [medium confidence 0.54]
+3. Dust Road Home by Hollow Pines - Score: 1.60 - Confidence: 0.42
+   Because: Weaker match: Dust Road Home by Hollow Pines ranks here because its energy (0.55) is only partly near your target, country is a neighbouring genre in the notes and its energy (0.55) sits in the typical range for the mood. Country is story-driven and nostalgic. [low confidence 0.42]
+```
+
+### Retrieval changes behavior: summary
+
+| Request | Baseline top 3 (no retrieval) | With retrieval top 3 |
+|---|---|---|
+| `jazz / relaxed / 0.3` | Coffee Shop Stories, Island Drift, Spacewalk Thoughts | Coffee Shop Stories, Library Rain, Midnight Coding |
+| "late night study session, something mellow" | Library Rain, Spacewalk Thoughts, Midnight Coding | Library Rain, Midnight Coding, Spacewalk Thoughts |
+
+## Reliability and guardrails
+
+Every rejection is logged at WARNING level in `logs/system.log` (git-ignored; a sample is in `assets/system_log_sample.txt`). Unexpected exceptions are caught in `Pipeline.run`, logged with a traceback, and returned as a generic failure rather than crashing.
+
+| Input | Behavior | Result (real output) |
+|---|---|---|
+| `--query ""` (empty) | Rejected at validation | `REJECTED: Empty request: give a description (text) and/or a genre, mood or energy value.` |
+| `--genre zydeco` (unknown genre) | Rejected; lists known genres, adds "Did you mean" when close | `REJECTED: Unknown genre 'zydeco'. Known genres: ambient, blues, classical, ...` |
+| `--genre rock --energy 7` (out of range) | Rejected | `REJECTED: energy must be between 0.0 and 1.0, got 7.0` |
+| `--energy abc` | Rejected (not a number) | `REJECTED: energy must be a number between 0 and 1, got 'abc'` |
+| mood `chil` (typo) | Rejected with a suggestion | message names `chill` (checked in `evaluate.py`) |
+| 300+ characters of text | Rejected | `text is too long (599 characters; the limit is 300)` |
+| `{"genre": "pop", "artist": "x"}` | Unknown fields rejected, not ignored | `Unsupported field(s): artist. ...` |
+| gibberish text `qwzx plorb` | Nothing retrieved, nothing parsed: rejected rather than guessing | `Could not match the request to any known genre, mood or topic. ...` |
+| `--genre blues --mood sad --energy 0.95` | Accepted with a warning (retrieval notes show the contradiction) | `WARNING: Energy 0.95 is unusual for mood 'sad' ...`, overall confidence 0.61 |
+| knowledge folder missing | Refused safely (tested in `test_missing_knowledge_base_degrades_safely`) | `knowledge base unavailable, cannot validate input`, logged at ERROR; no crash |
+
+Real output for the first three:
+
+```text
+=== WITH retrieval ===
+Request: {'text': ''}
+REJECTED: Empty request: give a description (text) and/or a genre, mood or energy value.
+
+=== WITH retrieval ===
+Request: {'genre': 'zydeco'}
+REJECTED: Unknown genre 'zydeco'. Known genres: ambient, blues, classical, country, edm, folk, hip hop, indie pop, jazz, lofi, metal, pop, r&b, reggae, rock, synthwave.
+
+=== WITH retrieval ===
+Request: {'genre': 'rock', 'energy': 7.0}
+REJECTED: energy must be between 0.0 and 1.0, got 7.0
+```
+
+**Confidence score.** Each recommendation gets 0-1: 0.55 * (score / best achievable score for that request) + 0.30 * (share of genre/mood/energy dimensions it satisfies; "related per notes" counts half) + 0.15 * (1 if retrieved notes contributed). The overall confidence is the mean over the returned songs, and below 0.50 the system prints a low-confidence warning. It is a heuristic, not a calibrated probability.
+
+## Evaluation harness
+
+`python evaluate.py` (real output, also in `assets/evaluate_output.txt`):
+
+```text
+Running 15 evaluation cases
+
+[PASS]  1. Structured: pop / happy / 0.8        -> ok, confidence 0.79
+[PASS]  2. Free text: late-night study          -> ok, confidence 0.93
+[PASS]  3. Free text: gym workout               -> ok, confidence 0.88
+[PASS]  4. Related genre surfaces (jazz)        -> ok, confidence 0.71
+[PASS]  5. Edge: empty string                   -> rejected: Empty request: give a description (text) and/or a genre, moo
+[PASS]  6. Edge: whitespace only                -> rejected: Empty request: give a description (text) and/or a genre, moo
+[PASS]  7. Edge: unknown genre                  -> rejected: Unknown genre 'zydeco'. Known genres: ambient, blues, classi
+[PASS]  8. Edge: unknown mood with typo hint    -> rejected: Unknown mood 'chil'. Known moods: angry, chill, confident, e
+[PASS]  9. Edge: energy out of range            -> rejected: energy must be between 0.0 and 1.0, got 1.7
+[PASS] 10. Edge: energy is not a number         -> rejected: energy must be a number between 0 and 1, got 'loud'
+[PASS] 11. Edge: wrong type (int)               -> rejected: Request must be text or a dict, got int
+[PASS] 12. Edge: gibberish text                 -> rejected: Could not match the request to any known genre, mood or topi
+[PASS] 13. Edge: very long text                 -> rejected: text is too long (599 characters; the limit is 300)
+[PASS] 14. Contradiction: sad blues at 0.95     -> ok, confidence 0.52
+[PASS] 15. Unknown key is rejected              -> rejected: Unsupported field(s): artist. Allowed: energy, genre, mood, 
+
+Summary: 15/15 passed
+Average confidence over 5 successful recommendation runs: 0.77
+```
+
+## Design decisions and trade-offs
+
+- **Keyword retrieval instead of embeddings or an LLM.** The brief required offline, no-key operation, and with 50 entries keyword overlap is transparent: every hit lists the words that matched. The cost is that synonyms not in the notes ("cosy" vs "cozy") miss.
+- **Retrieval changes scores, not just text.** Appending a note to an explanation would be cosmetic. Adjacency and inference terms are small (0.25-1.0) so an exact genre match (+2.0) still outranks them; that keeps the original behavior predictable but also keeps the genre bias.
+- **Template explanations instead of free generation.** The specialized explanation can only state facts from the song row and the terms that fired, so it cannot invent a reason. The cost is repetitive wording.
+- **Reject rather than guess.** Unknown genres, gibberish and out-of-range numbers are refused with a message. Friendlier fuzzy matching would hide mistakes.
+- **Self-check with fallback.** A failed check drops back to the original rule rather than showing a suspicious ranking. In practice it has not triggered on the test inputs, so that path is covered by design rather than by a real failure.
+- **Confidence is a transparent formula.** Easy to explain, but it is not calibrated (see the model card).
+- **The original `src/main.py` behavior is untouched**; the new mode only activates with `--query/--genre/--mood/--energy`. `tabulate` is imported lazily so the new mode runs without it.
+
+## Testing summary
+
+- `pytest`: **37 of 37 passed** (5 original recommender tests, 32 new tests for retrieval, RAG ranking, validation, pipeline, explanation format and trace saving).
+- `python evaluate.py`: **15 of 15 passed**, average confidence **0.77** over the 5 cases that produce recommendations; exit code 0.
+- What the testing found: see "What surprised me while testing reliability" in the model card (an explanation that overstated an energy match, a whitespace-normalization bug, a hard `tabulate` dependency).
+
+## Model card
+
+See [`model_card.md`](model_card.md) for limitations and biases, misuse and prevention, reliability surprises, AI collaboration, future improvements, and the baseline-vs-specialized comparison.
+
+## Repository layout
+
+```text
+data/songs.csv, data/knowledge/{genre_notes,mood_notes}.md   knowledge sources
+src/retriever.py   src/rag.py   src/validation.py   src/pipeline.py   new system
+src/explainer.py   src/trace.py   src/logging_setup.py   src/compare_explanations.py
+src/recommender.py   src/main.py                              original recommender + CLI
+evaluate.py   tests/                                          evaluation harness and unit tests
+diagrams/architecture.mmd   assets/   logs/system.log          diagram, saved outputs, runtime log
+ai_interactions.md   model_card.md                            agentic trace, model card
+```
+
+---
+
+# Base project details (Modules 1-3)
+
+The sections below are the original Music Recommender Simulation write-up.
+
+## Project Summary (original)
 
 A small content-based music recommender. It reads 20 songs from a CSV, scores each one against a user taste profile (genre, mood, energy, plus optional extra attributes), and returns the top 5 with a reason string for every term that fired. I built it to see how a scoring rule plus a sort is really what a recommender is underneath, and to test how changing the weights changes who gets recommended.
 
