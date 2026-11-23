@@ -1,0 +1,22 @@
+
+=== WITHOUT retrieval (baseline) ===
+Request: {'text': 'late night study session, something mellow'}
+Mode: baseline | overall confidence: 0.84
+
+1. Library Rain by Paper Lanterns - Score: 2.00 - Confidence: 0.85
+   Because: mood match (+1.0), energy similarity (+1.00)
+2. Spacewalk Thoughts by Orbit Bloom - Score: 1.93 - Confidence: 0.83
+   Because: mood match (+1.0), energy similarity (+0.93)
+3. Midnight Coding by LoRoom - Score: 1.93 - Confidence: 0.83
+   Because: mood match (+1.0), energy similarity (+0.93)
+
+=== WITH retrieval ===
+Request: {'text': 'late night study session, something mellow'}
+Mode: rag | overall confidence: 0.98
+
+1. Library Rain by Paper Lanterns - Score: 3.25 - Confidence: 1.00
+   Because: Library Rain by Paper Lanterns ranks here because its mood (chill) matches, its energy (0.35) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+2. Midnight Coding by LoRoom - Score: 3.18 - Confidence: 1.00
+   Because: Midnight Coding by LoRoom ranks here because its mood (chill) matches, its energy (0.42) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+3. Spacewalk Thoughts by Orbit Bloom - Score: 2.93 - Confidence: 0.94
+   Because: Spacewalk Thoughts by Orbit Bloom ranks here because its mood (chill) matches, its energy (0.28) is close to your target and ambient is a neighbouring genre in the notes. Ambient favours texture over rhythm. [high confidence 0.94]

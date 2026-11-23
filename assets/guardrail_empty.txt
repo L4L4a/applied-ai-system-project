@@ -1,0 +1,4 @@
+
+=== WITH retrieval ===
+Request: {'text': ''}
+REJECTED: Empty request: give a description (text) and/or a genre, mood or energy value.

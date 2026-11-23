@@ -1,0 +1,37 @@
+flowchart TD
+    U[/"User request<br/>free text and/or genre, mood, energy"/] --> V
+
+    subgraph PIPE["src/pipeline.py : Pipeline.run (every step is recorded in result.steps)"]
+        V{"1. Validate<br/>src/validation.py"}
+        P["2. Parse<br/>rag.parse_request"]
+        R["3. Retrieve<br/>retriever.retrieve + rag.build_context"]
+        K["4. Rank<br/>rag.rank_rag"]
+        C{"5. Self-check<br/>pipeline.self_check"}
+        B["Fallback ranking<br/>rag.rank_baseline"]
+        E["6. Explain + confidence<br/>explainer.explain_specialized<br/>pipeline.confidence_for"]
+        V -- valid --> P --> R --> K --> C
+        C -- pass --> E
+        C -- fail --> B --> E
+    end
+
+    V -- "rejected: empty, unknown genre/mood, bad energy, too long" --> X["Rejection message<br/>ok=False, no recommendations"]
+    R -. "nothing matched" .-> X
+    C -- "fails again" --> X
+
+    KB[("Knowledge base<br/>data/knowledge/genre_notes.md<br/>data/knowledge/mood_notes.md<br/>data/songs.csv")] --> R
+    KB --> V
+    SONGS[("data/songs.csv<br/>20 songs")] --> K
+
+    E --> O[/"Output: top-k songs with score,<br/>confidence, explanation + warnings"/]
+    O --> T["Trace saved to ai_interactions.md<br/>src/trace.py"]
+
+    V -. log .-> L[("logs/system.log")]
+    X -. log .-> L
+    E -. log .-> L
+
+    subgraph TEST["Testing"]
+        EV["evaluate.py<br/>15 predefined inputs: pass/fail + average confidence"]
+        PT["pytest tests/<br/>37 unit tests"]
+    end
+    EV -. "calls Pipeline.run" .-> U
+    PT -. "unit tests each module" .-> PIPE

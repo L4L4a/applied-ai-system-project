@@ -1,0 +1,45 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0 -- /Library/Developer/CommandLineTools/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/elviskenneth/applied-ai-system-final
+collecting ... collected 37 items
+
+tests/test_applied_ai.py::test_knowledge_base_has_three_sources PASSED   [  2%]
+tests/test_applied_ai.py::test_retrieve_finds_lofi_for_study PASSED      [  5%]
+tests/test_applied_ai.py::test_retrieve_alias_and_no_match PASSED        [  8%]
+tests/test_applied_ai.py::test_rag_changes_ranking_and_adds_related_genre PASSED [ 10%]
+tests/test_applied_ai.py::test_rag_infers_missing_preferences PASSED     [ 13%]
+tests/test_applied_ai.py::test_validation_rejects[] PASSED               [ 16%]
+tests/test_applied_ai.py::test_validation_rejects[   ] PASSED            [ 18%]
+tests/test_applied_ai.py::test_validation_rejects[bad2] PASSED           [ 21%]
+tests/test_applied_ai.py::test_validation_rejects[bad3] PASSED           [ 24%]
+tests/test_applied_ai.py::test_validation_rejects[None] PASSED           [ 27%]
+tests/test_applied_ai.py::test_validation_rejects[5] PASSED              [ 29%]
+tests/test_applied_ai.py::test_validation_rejects[bad6] PASSED           [ 32%]
+tests/test_applied_ai.py::test_validation_rejects[bad7] PASSED           [ 35%]
+tests/test_applied_ai.py::test_validation_rejects[bad8] PASSED           [ 37%]
+tests/test_applied_ai.py::test_validation_rejects[bad9] PASSED           [ 40%]
+tests/test_applied_ai.py::test_validation_rejects[bad10] PASSED          [ 43%]
+tests/test_applied_ai.py::test_validation_rejects[bad11] PASSED          [ 45%]
+tests/test_applied_ai.py::test_validation_rejects[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] PASSED [ 48%]
+tests/test_applied_ai.py::test_validation_unknown_genre_message_has_hint PASSED [ 51%]
+tests/test_applied_ai.py::test_validation_normalises PASSED              [ 54%]
+tests/test_applied_ai.py::test_pipeline_success_has_confidence_and_trace PASSED [ 56%]
+tests/test_applied_ai.py::test_pipeline_rejects_instead_of_raising PASSED [ 59%]
+tests/test_applied_ai.py::test_pipeline_bad_k PASSED                     [ 62%]
+tests/test_applied_ai.py::test_baseline_mode_cannot_read_free_text_without_prefs PASSED [ 64%]
+tests/test_applied_ai.py::test_confidence_higher_for_perfect_match_than_contradiction PASSED [ 67%]
+tests/test_applied_ai.py::test_missing_knowledge_base_degrades_safely PASSED [ 70%]
+tests/test_applied_ai.py::test_few_shot_examples_render_exactly[ex0] PASSED [ 72%]
+tests/test_applied_ai.py::test_few_shot_examples_render_exactly[ex1] PASSED [ 75%]
+tests/test_applied_ai.py::test_few_shot_examples_render_exactly[ex2] PASSED [ 78%]
+tests/test_applied_ai.py::test_constraints_catch_violations PASSED       [ 81%]
+tests/test_applied_ai.py::test_pipeline_uses_specialized_text PASSED     [ 83%]
+tests/test_applied_ai.py::test_trace_saved_and_replaced_not_duplicated PASSED [ 86%]
+tests/test_recommender.py::test_recommend_returns_songs_sorted_by_score PASSED [ 89%]
+tests/test_recommender.py::test_explain_recommendation_returns_non_empty_string PASSED [ 91%]
+tests/test_recommender.py::test_score_song_returns_numeric_score_and_reasons_for_every_song PASSED [ 94%]
+tests/test_recommender.py::test_strategies_change_the_ranking PASSED     [ 97%]
+tests/test_recommender.py::test_diversity_penalty_demotes_repeated_artist PASSED [100%]
+
+============================== 37 passed in 0.08s ==============================

@@ -1,0 +1,20 @@
+Running 15 evaluation cases
+
+[PASS]  1. Structured: pop / happy / 0.8        -> ok, confidence 0.79
+[PASS]  2. Free text: late-night study          -> ok, confidence 0.93
+[PASS]  3. Free text: gym workout               -> ok, confidence 0.88
+[PASS]  4. Related genre surfaces (jazz)        -> ok, confidence 0.71
+[PASS]  5. Edge: empty string                   -> rejected: Empty request: give a description (text) and/or a genre, moo
+[PASS]  6. Edge: whitespace only                -> rejected: Empty request: give a description (text) and/or a genre, moo
+[PASS]  7. Edge: unknown genre                  -> rejected: Unknown genre 'zydeco'. Known genres: ambient, blues, classi
+[PASS]  8. Edge: unknown mood with typo hint    -> rejected: Unknown mood 'chil'. Known moods: angry, chill, confident, e
+[PASS]  9. Edge: energy out of range            -> rejected: energy must be between 0.0 and 1.0, got 1.7
+[PASS] 10. Edge: energy is not a number         -> rejected: energy must be a number between 0 and 1, got 'loud'
+[PASS] 11. Edge: wrong type (int)               -> rejected: Request must be text or a dict, got int
+[PASS] 12. Edge: gibberish text                 -> rejected: Could not match the request to any known genre, mood or topi
+[PASS] 13. Edge: very long text                 -> rejected: text is too long (599 characters; the limit is 300)
+[PASS] 14. Contradiction: sad blues at 0.95     -> ok, confidence 0.52
+[PASS] 15. Unknown key is rejected              -> rejected: Unsupported field(s): artist. Allowed: energy, genre, mood, 
+
+Summary: 15/15 passed
+Average confidence over 5 successful recommendation runs: 0.77

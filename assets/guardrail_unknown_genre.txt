@@ -1,0 +1,4 @@
+
+=== WITH retrieval ===
+Request: {'genre': 'zydeco'}
+REJECTED: Unknown genre 'zydeco'. Known genres: ambient, blues, classical, country, edm, folk, hip hop, indie pop, jazz, lofi, metal, pop, r&b, reggae, rock, synthwave.

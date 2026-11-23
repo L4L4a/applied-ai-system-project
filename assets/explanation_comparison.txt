@@ -1,0 +1,24 @@
+=== Request: {'genre': 'pop', 'mood': 'happy', 'energy': 0.8} (overall confidence 0.90) ===
+#1 Sunrise City
+  BASELINE   : genre match (+2.0), mood match (+1.0), energy similarity (+0.98), energy inside 'happy' range 0.60-0.90 (+0.25)
+  SPECIALIZED: Sunrise City by Neon Echo ranks here because its genre (pop) matches, its mood (happy) matches and its energy (0.82) is close to your target. Pop is built around catchy hooks and polished production, and it bends easily toward dance or indie sounds. [high confidence 1.00]
+#2 Neon Ballroom
+  BASELINE   : genre match (+2.0), energy similarity (+0.88), 'romantic' is a related mood in the notes (+0.50), energy inside 'happy' range 0.60-0.90 (+0.25)
+  SPECIALIZED: Neon Ballroom by Velour ranks here because its genre (pop) matches, its energy (0.68) is close to your target and romantic is a related mood in the notes. Pop is built around catchy hooks and polished production, and it bends easily toward dance or indie sounds. [high confidence 0.90]
+
+=== Request: 'late night study session, something mellow' (overall confidence 0.98) ===
+#1 Library Rain
+  BASELINE   : mood match (+1.0), energy similarity (+1.00), genre 'lofi' inferred from notes (+1.00), energy inside 'chill' range 0.20-0.50 (+0.25)
+  SPECIALIZED: Library Rain by Paper Lanterns ranks here because its mood (chill) matches, its energy (0.35) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+#2 Midnight Coding
+  BASELINE   : mood match (+1.0), energy similarity (+0.93), genre 'lofi' inferred from notes (+1.00), energy inside 'chill' range 0.20-0.50 (+0.25)
+  SPECIALIZED: Midnight Coding by LoRoom ranks here because its mood (chill) matches, its energy (0.42) is close to your target and lofi fits what you described. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [high confidence 1.00]
+
+=== Request: {'genre': 'blues', 'mood': 'sad', 'energy': 0.95} (overall confidence 0.61) ===
+#1 Porch Light Blues
+  BASELINE   : genre match (+2.0), mood match (+1.0), energy similarity (+0.50), energy inside 'sad' range 0.20-0.55 (+0.25)
+  SPECIALIZED: Porch Light Blues by Delta Mae ranks here because its genre (blues) matches, its mood (sad) matches and its energy (0.45) is far from your target. Blues is built on expressive guitar and sorrowful lyrics and rarely runs at high energy. [high confidence 0.87]
+#2 Storm Runner
+  BASELINE   : energy similarity (+0.96), 'rock' is a related genre in the notes (+0.75)
+  SPECIALIZED: Storm Runner by Voltline ranks here because its energy (0.91) is close to your target and rock is a neighbouring genre in the notes. Rock is guitar-driven and loud. [medium confidence 0.54]
+

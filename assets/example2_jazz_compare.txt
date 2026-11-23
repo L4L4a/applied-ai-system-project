@@ -1,0 +1,23 @@
+
+=== WITHOUT retrieval (baseline) ===
+Request: {'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3}
+Mode: baseline | overall confidence: 0.49
+WARNING: Low confidence (0.49): the catalog has few songs matching this request.
+
+1. Coffee Shop Stories by Slow Stereo - Score: 3.93 - Confidence: 0.84
+   Because: genre match (+2.0), mood match (+1.0), energy similarity (+0.93)
+2. Island Drift by Salt Tide - Score: 1.72 - Confidence: 0.39
+   Because: mood match (+1.0), energy similarity (+0.72)
+3. Spacewalk Thoughts by Orbit Bloom - Score: 0.98 - Confidence: 0.23
+   Because: energy similarity (+0.98)
+
+=== WITH retrieval ===
+Request: {'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3}
+Mode: rag | overall confidence: 0.79
+
+1. Coffee Shop Stories by Slow Stereo - Score: 4.18 - Confidence: 1.00
+   Because: Coffee Shop Stories by Slow Stereo ranks here because its genre (jazz) matches, its mood (relaxed) matches and its energy (0.37) is close to your target. Jazz is improvisational and mellow in its lounge forms. [high confidence 1.00]
+2. Library Rain by Paper Lanterns - Score: 2.45 - Confidence: 0.69
+   Because: Library Rain by Paper Lanterns ranks here because its energy (0.35) is close to your target, lofi is a neighbouring genre in the notes and chill is a related mood in the notes. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [medium confidence 0.69]
+3. Midnight Coding by LoRoom - Score: 2.38 - Confidence: 0.68
+   Because: Midnight Coding by LoRoom ranks here because its energy (0.42) is close to your target, lofi is a neighbouring genre in the notes and chill is a related mood in the notes. Lofi is low-tempo, mostly instrumental and warm, which is why it dominates study and coding playlists. [medium confidence 0.68]

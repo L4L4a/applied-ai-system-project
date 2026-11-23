@@ -1,0 +1,4 @@
+
+=== WITH retrieval ===
+Request: {'genre': 'rock', 'energy': 7.0}
+REJECTED: energy must be between 0.0 and 1.0, got 7.0

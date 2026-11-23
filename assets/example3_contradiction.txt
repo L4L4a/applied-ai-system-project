@@ -1,0 +1,12 @@
+
+=== WITH retrieval ===
+Request: {'genre': 'blues', 'mood': 'sad', 'energy': 0.95}
+Mode: rag | overall confidence: 0.61
+WARNING: Energy 0.95 is unusual for mood 'sad' (typical 0.20-0.55); expect a compromise between mood and energy.
+
+1. Porch Light Blues by Delta Mae - Score: 3.75 - Confidence: 0.87
+   Because: Porch Light Blues by Delta Mae ranks here because its genre (blues) matches, its mood (sad) matches and its energy (0.45) is far from your target. Blues is built on expressive guitar and sorrowful lyrics and rarely runs at high energy. [high confidence 0.87]
+2. Storm Runner by Voltline - Score: 1.71 - Confidence: 0.54
+   Because: Storm Runner by Voltline ranks here because its energy (0.91) is close to your target and rock is a neighbouring genre in the notes. Rock is guitar-driven and loud. [medium confidence 0.54]
+3. Dust Road Home by Hollow Pines - Score: 1.60 - Confidence: 0.42
+   Because: Weaker match: Dust Road Home by Hollow Pines ranks here because its energy (0.55) is only partly near your target, country is a neighbouring genre in the notes and its energy (0.55) sits in the typical range for the mood. Country is story-driven and nostalgic. [low confidence 0.42]

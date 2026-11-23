@@ -1,0 +1,44 @@
+2026-11-22 22:51:09,854 INFO OK mode=rag request={'genre': 'pop', 'mood': 'happy', 'energy': 0.8} top='Sunrise City' confidence=0.79 warnings=0
+2026-11-22 22:51:09,856 INFO OK mode=rag request='late night study session, something mellow' top='Library Rain' confidence=0.93 warnings=0
+2026-11-22 22:51:09,858 INFO OK mode=rag request='pumped up workout at the gym' top='Gym Hero' confidence=0.88 warnings=0
+2026-11-22 22:51:09,860 INFO OK mode=rag request={'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3} top='Coffee Shop Stories' confidence=0.71 warnings=0
+2026-11-22 22:51:09,860 WARNING REJECTED Empty request: give a description (text) and/or a genre, mood or energy value. | request=''
+2026-11-22 22:51:09,860 WARNING REJECTED Empty request: give a description (text) and/or a genre, mood or energy value. | request={'text': '   \n\t '}
+2026-11-22 22:51:09,860 WARNING REJECTED Unknown genre 'zydeco'. Known genres: ambient, blues, classical, country, edm, folk, hip hop, indie pop, jazz, lofi, metal, pop, r&b, reggae, rock, synthwave. | request={'genre': 'zydeco', 'mood': 'happy'}
+2026-11-22 22:51:09,860 WARNING REJECTED Unknown mood 'chil'. Known moods: angry, chill, confident, euphoric, focused, happy, intense, melancholy, moody, nostalgic, relaxed, romantic, sad, wistful. Did you mean: chill? | request={'mood': 'chil'}
+2026-11-22 22:51:09,860 WARNING REJECTED energy must be between 0.0 and 1.0, got 1.7 | request={'genre': 'rock', 'energy': 1.7}
+2026-11-22 22:51:09,860 WARNING REJECTED energy must be a number between 0 and 1, got 'loud' | request={'genre': 'rock', 'energy': 'loud'}
+2026-11-22 22:51:09,860 WARNING REJECTED Request must be text or a dict, got int | request=42
+2026-11-22 22:51:09,862 WARNING REJECTED Could not match the request to any known genre, mood or topic. Try naming a genre or mood (e.g. 'chill lofi for studying'). | request='qwzx plorb vnnm'
+2026-11-22 22:51:09,862 WARNING REJECTED text is too long (599 characters; the limit is 300) | request='chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill chill '
+2026-11-22 22:51:09,863 INFO OK mode=rag request={'genre': 'blues', 'mood': 'sad', 'energy': 0.95} top='Porch Light Blues' confidence=0.52 warnings=1
+2026-11-22 22:51:09,863 WARNING REJECTED Unsupported field(s): artist. Allowed: energy, genre, mood, text | request={'genre': 'pop', 'artist': 'x'}
+2026-11-22 22:51:10,053 INFO OK mode=rag request={'genre': 'pop', 'mood': 'happy', 'energy': 0.8} top='Sunrise City' confidence=0.79 warnings=0
+2026-11-22 22:51:10,053 WARNING REJECTED Empty request: give a description (text) and/or a genre, mood or energy value. | request=''
+2026-11-22 22:51:10,054 WARNING REJECTED Unknown genre 'zydeco'. Known genres: ambient, blues, classical, country, edm, folk, hip hop, indie pop, jazz, lofi, metal, pop, r&b, reggae, rock, synthwave. | request={'genre': 'zydeco'}
+2026-11-22 22:51:10,055 WARNING REJECTED Could not match the request to any known genre, mood or topic. Try naming a genre or mood (e.g. 'chill lofi for studying'). | request='qwzx plorb'
+2026-11-22 22:51:10,055 WARNING REJECTED Request must be text or a dict, got float | request=3.14
+2026-11-22 22:51:10,056 WARNING REJECTED k must be an integer from 1 to 20, got 0 | request='jazz'
+2026-11-22 22:51:10,056 WARNING REJECTED Baseline mode needs a genre, mood or energy; free text can only be interpreted with retrieval on. | request='qwzx'
+2026-11-22 22:51:10,057 INFO OK mode=baseline request={'genre': 'rock'} top='Storm Runner' confidence=0.17 warnings=1
+2026-11-22 22:51:10,058 INFO OK mode=rag request={'genre': 'lofi', 'mood': 'chill', 'energy': 0.35} top='Library Rain' confidence=0.88 warnings=0
+2026-11-22 22:51:10,060 INFO OK mode=rag request={'genre': 'blues', 'mood': 'sad', 'energy': 0.95} top='Porch Light Blues' confidence=0.52 warnings=1
+2026-11-22 22:51:10,066 ERROR knowledge base unavailable ([Errno 2] No such file or directory: '/private/var/folders/9d/853lp3b10fl2vgv9mh6nqtnw0000gn/T/pytest-of-elviskenneth/pytest-5/test_missing_knowledge_base_de0/genre_notes.md')
+2026-11-22 22:51:10,066 ERROR REJECTED knowledge base unavailable, cannot validate input | request={'genre': 'pop'}
+2026-11-22 22:51:10,070 INFO OK mode=rag request={'genre': 'pop', 'mood': 'happy', 'energy': 0.8} top='Sunrise City' confidence=0.79 warnings=0
+2026-11-22 22:51:10,072 INFO OK mode=rag request='jazz' top='Coffee Shop Stories' confidence=0.58 warnings=0
+2026-11-22 22:51:10,072 WARNING REJECTED Empty request: give a description (text) and/or a genre, mood or energy value. | request=''
+2026-11-22 22:51:10,152 INFO OK mode=baseline request={'text': 'late night study session, something mellow'} top='Library Rain' confidence=0.84 warnings=0
+2026-11-22 22:51:10,155 INFO OK mode=rag request={'text': 'late night study session, something mellow'} top='Library Rain' confidence=0.98 warnings=0
+2026-11-22 22:51:10,206 INFO OK mode=baseline request={'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3} top='Coffee Shop Stories' confidence=0.49 warnings=1
+2026-11-22 22:51:10,208 INFO OK mode=rag request={'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3} top='Coffee Shop Stories' confidence=0.79 warnings=0
+2026-11-22 22:51:10,262 INFO OK mode=rag request={'genre': 'blues', 'mood': 'sad', 'energy': 0.95} top='Porch Light Blues' confidence=0.61 warnings=1
+2026-11-22 22:51:10,312 WARNING REJECTED Empty request: give a description (text) and/or a genre, mood or energy value. | request={'text': ''}
+2026-11-22 22:51:10,363 WARNING REJECTED Unknown genre 'zydeco'. Known genres: ambient, blues, classical, country, edm, folk, hip hop, indie pop, jazz, lofi, metal, pop, r&b, reggae, rock, synthwave. | request={'genre': 'zydeco'}
+2026-11-22 22:51:10,413 WARNING REJECTED energy must be between 0.0 and 1.0, got 7.0 | request={'genre': 'rock', 'energy': 7.0}
+2026-11-22 22:51:10,462 INFO OK mode=rag request={'genre': 'pop', 'mood': 'happy', 'energy': 0.8} top='Sunrise City' confidence=0.90 warnings=0
+2026-11-22 22:51:10,464 INFO OK mode=rag request='late night study session, something mellow' top='Library Rain' confidence=0.98 warnings=0
+2026-11-22 22:51:10,465 INFO OK mode=rag request={'genre': 'blues', 'mood': 'sad', 'energy': 0.95} top='Porch Light Blues' confidence=0.61 warnings=1
+2026-11-22 22:51:10,514 INFO OK mode=rag request='late night study session, something mellow' top='Library Rain' confidence=0.93 warnings=0
+2026-11-22 22:51:10,515 INFO OK mode=rag request={'genre': 'jazz', 'mood': 'relaxed', 'energy': 0.3} top='Coffee Shop Stories' confidence=0.71 warnings=0
+2026-11-22 22:51:10,516 WARNING REJECTED Unknown genre 'zydeco'. Known genres: ambient, blues, classical, country, edm, folk, hip hop, indie pop, jazz, lofi, metal, pop, r&b, reggae, rock, synthwave. | request={'genre': 'zydeco', 'mood': 'happy'}
