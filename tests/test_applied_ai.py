@@ -130,3 +130,16 @@ def test_pipeline_uses_specialized_text(pipeline):
     rec = pipeline.run({"genre": "pop", "mood": "happy", "energy": 0.8}).recommendations[0]
     assert rec.explanation != rec.baseline_explanation
     assert "confidence" in rec.explanation and "genre match" in rec.baseline_explanation
+
+
+def test_trace_saved_and_replaced_not_duplicated(tmp_path, pipeline):
+    from src.trace import START, save_traces
+    path = tmp_path / "log.md"
+    path.write_text("# Existing\n\nkeep me\n")
+    items = [("jazz", pipeline.run("jazz")), ("", pipeline.run(""))]
+    save_traces(str(path), items)
+    save_traces(str(path), items)
+    text = path.read_text()
+    assert text.count(START) == 1 and "keep me" in text
+    for step in ("validate", "parse", "retrieve", "rank", "self-check", "explain"):
+        assert f": {step}**" in text
