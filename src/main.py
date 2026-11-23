@@ -6,13 +6,17 @@ Run from the project root, for example:
   python -m src.main --mode mood-first --diversity
   python -m src.main --profile "Chill Lofi" --mode all
   python -m src.main --basic --plain                  # baseline 3-term scoring, plain text
+
+Applied-AI (retrieval) mode, used when any of --query/--genre/--mood/--energy is given:
+  python -m src.main --query "late night study session, something mellow"
+  python -m src.main --genre jazz --mood relaxed --energy 0.3 --compare   # before/after retrieval
+  python -m src.main --query "" --plain                                   # rejected by the guardrails
 """
 
 import argparse
 from typing import Dict, List
 
-from tabulate import tabulate
-
+from src.pipeline import Pipeline
 from src.recommender import STRATEGIES, get_strategy, load_songs, recommend_songs
 
 # Core preferences (genre / mood / energy) plus optional extra-attribute preferences.
@@ -46,6 +50,7 @@ CORE_KEYS = ("genre", "mood", "energy")
 
 def format_results(results, as_table: bool) -> str:
     if as_table:
+        from tabulate import tabulate  # imported lazily: retrieval mode and tests need no extra packages
         rows = [
             [rank, song["title"], song["artist"], f"{score:.2f}", explanation]
             for rank, (song, score, explanation) in enumerate(results, start=1)
@@ -69,12 +74,57 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--basic", action="store_true",
                         help="ignore extra-attribute preferences; use only genre/mood/energy")
     parser.add_argument("--plain", action="store_true", help="print plain text instead of a table")
+    rag = parser.add_argument_group("retrieval (RAG) mode")
+    rag.add_argument("--query", default=None, help="free-text request, e.g. 'music for a late night study session'")
+    rag.add_argument("--genre", default=None, help="requested genre")
+    rag.add_argument("--mood", default=None, help="requested mood")
+    rag.add_argument("--energy", default=None, help="target energy, 0.0-1.0")
+    rag.add_argument("--no-rag", action="store_true", help="turn retrieval off (original scoring rule only)")
+    rag.add_argument("--compare", action="store_true", help="show baseline (no retrieval) and retrieval results side by side")
+    rag.add_argument("--trace", default=None, metavar="FILE", help="save the pipeline's intermediate steps to FILE (markdown)")
     parser.add_argument("-k", type=int, default=5, help="number of recommendations (default: 5)")
     return parser.parse_args()
 
 
+def run_rag_mode(args: argparse.Namespace) -> None:
+    raw = {key: getattr(args, key) for key in ("genre", "mood", "energy") if getattr(args, key) is not None}
+    if "energy" in raw:
+        try:
+            raw["energy"] = float(raw["energy"])
+        except ValueError:
+            pass  # left as a string so validation can explain the problem
+    if args.query is not None:
+        raw["text"] = args.query
+    pipeline = Pipeline()
+    modes = [False, True] if args.compare else [not args.no_rag]
+    results = []
+    for use_rag in modes:
+        result = pipeline.run(raw, k=args.k, use_rag=use_rag)
+        results.append(result)
+        label = "WITH retrieval" if use_rag else "WITHOUT retrieval (baseline)"
+        print(f"\n=== {label} ===")
+        print(f"Request: {raw}")
+        if not result.ok:
+            print(f"REJECTED: {result.error}")
+            continue
+        print(f"Mode: {result.mode} | overall confidence: {result.confidence:.2f}")
+        for warning in result.warnings:
+            print(f"WARNING: {warning}")
+        print()
+        for rank, rec in enumerate(result.recommendations, start=1):
+            print(f"{rank}. {rec.song['title']} by {rec.song['artist']} - Score: {rec.score:.2f} - Confidence: {rec.confidence:.2f}")
+            print(f"   Because: {rec.explanation if use_rag else rec.baseline_explanation}")
+    if args.trace:
+        from src.trace import save_trace
+        save_trace(args.trace, raw, results[-1])
+        print(f"\nTrace saved to {args.trace}")
+
+
 def main() -> None:
     args = parse_args()
+    if any(v is not None for v in (args.query, args.genre, args.mood, args.energy)):
+        run_rag_mode(args)
+        return
     songs = load_songs("data/songs.csv")
     print(f"Loaded songs: {len(songs)}")
 

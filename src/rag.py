@@ -115,6 +115,9 @@ def build_context(req: ParsedRequest, kb: KnowledgeBase) -> Context:
     hits = retrieve(req.query(), kb)
     named = [h for h in hits if h.score >= 3.0]
     genre_hits = [h.entry for h in named if h.entry.kind == "genre"]
+    if not named and not req.stated_prefs():
+        named = hits          # nothing named outright: fall back to weaker topical keyword matches
+        genre_hits = [h.entry for h in named if h.entry.kind == "genre"]
     mood_hits = [h.entry for h in named if h.entry.kind == "mood"]
     inferred: Dict[str, object] = {}
 
